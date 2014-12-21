@@ -7,6 +7,7 @@ import json
 import os.path
 import requests
 import sqlite3
+import time
 
 # settings constants
 API_KEY = "79A89606470D44E6BBE64BEC2D73D5BB" # your api key - http://steamcommunity.com/dev/apikey
@@ -14,9 +15,11 @@ ACCOUNT_ID = 388221 # your account id - get from Dota 2
 DB_FILE = "matches.db" # db file to read/write
 
 # other constants - do not touch
-HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
-DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
-API_RATE_LIMIT = 1000
+#HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
+#DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
+HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_205790/GetMatchHistory/V001/"
+DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_205790/GetMatchDetails/V001/"
+API_RATE_LIMIT = 1 # (in seconds)
 
 SQL_CREATE_TABLE = (
 	"CREATE TABLE matches ("
@@ -46,11 +49,13 @@ SQL_CREATE_TABLE = (
 RANKED_LOBBY_TYPE = 7
 UNRANKED_LOBBY_TYPE = 0
 
-last_request = 0
+last_request = time.time()
 
 def rate_limit():
-	while time.time() - last_request < API_RATE_LIMIT:
-		pass
+	global last_request
+	time_diff = time.time() - last_request
+	if (time_diff < API_RATE_LIMIT):
+		time.sleep(API_RATE_LIMIT - time_diff)
 	last_request = time.time()
 
 def process_match(match):
@@ -92,13 +97,23 @@ def main():
 		last_time = 0
 	else:
 		last_time = last_time[0]
-	print("Last match id was " + str(last_time))
+	print("Last match time was " + str(last_time))
 
 	# process initial list of match history from match sequence
 	print("Getting match history...")
 	qs = {"account_id": ACCOUNT_ID, "key": API_KEY, "date_min": last_time + 1}
-	r = requests.get(HISTORY_URL, params=qs)
-	process_match_history(r.json().get("result"))
+	rate_limit()
+	r = requests.get(HISTORY_URL, params=qs).json().get("result")
+	process_match_history(r)
+
+	# keep processing rest of match history while there are more
+	while r.get("results_remaining") > 0:
+		print("Getting more match history...")
+		last_match = r.get("matches")[-1];
+		qs = {"account_id": ACCOUNT_ID, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
+		rate_limit()
+		r = requests.get(HISTORY_URL, params=qs).json().get("result")
+		process_match_history(r)
 
 	# cleanup
 	db.commit()
