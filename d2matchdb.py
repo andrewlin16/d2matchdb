@@ -13,8 +13,6 @@ import time
 
 # settings constants
 API_KEY = "79A89606470D44E6BBE64BEC2D73D5BB" # your api key - http://steamcommunity.com/dev/apikey
-ACCOUNT_ID = 388221 # your account id - get from Dota 2
-DB_FILE = "matches.db" # db file to read/write
 
 # other constants - do not touch
 HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
@@ -101,7 +99,7 @@ def combine_players(a, b):
 def is_dire(player):
 	return player.get("player_slot") & 128 != 0
 
-def process_match(cur, match):
+def process_match(cur, match, account_id):
 	# print out summary of match
 	match_id = match.get("match_id")
 	print("Found match " + str(match_id))
@@ -116,7 +114,7 @@ def process_match(cur, match):
 
 		# get player + team details
 		all_players = match_details.get("players")
-		player = next(filter(lambda o: o.get("account_id") == ACCOUNT_ID, all_players))
+		player = next(filter(lambda o: o.get("account_id") == account_id, all_players))
 		player_team = is_dire(player)
 		our_team = reduce(combine_players, filter(lambda p: is_dire(p) == player_team, all_players))
 		their_team = reduce(combine_players, filter(lambda p: is_dire(p) != player_team, all_players))
@@ -140,7 +138,7 @@ def process_match(cur, match):
 		cur.execute(sql_query, tuple(row_obj.values()))
 		print("Stored " + str(match_id) + " in db")
 
-def process_match_history(cur, history):
+def process_match_history(cur, history, account_id):
 	# throw exception is status is not OK
 	if history.get("status") is not 1:
 		raise Exception(history.get("statusDetail"))
@@ -154,19 +152,28 @@ def process_match_history(cur, history):
 	# process each match in history
 	matches = history.get("matches")
 	for match in matches:
-		process_match(cur, match)
+		process_match(cur, match, account_id)
 
 def main():
+	# check command line arguments
+	if len(sys.argv) < 2:
+		print("Usage: " + sys.argv[0] + " <account id>")
+		print("You can get account id from Dota 2.")
+		return
+
+	account_id = int(sys.argv[1])
+	db_file = str(account_id) + ".db"
+
 	# create/open SQLite db
-	if not os.path.exists(DB_FILE):
-		db = sqlite3.connect(DB_FILE)
+	if not os.path.exists(db_file):
+		db = sqlite3.connect(db_file)
 		cur = db.cursor()
 		cur.execute(SQL_CREATE_TABLE)
-		print("New db created as " + DB_FILE)
+		print("New db created as " + db_file)
 	else:
-		db = sqlite3.connect(DB_FILE)
+		db = sqlite3.connect(db_file)
 		cur = db.cursor()
-		print("Opened " + DB_FILE)
+		print("Opened " + db_file)
 
 	# get latest match time
 	last_time = cur.execute("SELECT start_time FROM matches ORDER BY start_time DESC LIMIT 1").fetchone()
@@ -178,19 +185,19 @@ def main():
 
 	# process initial list of match history from match sequence
 	print("Getting match history...")
-	qs = {"account_id": ACCOUNT_ID, "key": API_KEY, "date_min": last_time + 1}
+	qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1}
 	rate_limit()
 	r = requests.get(HISTORY_URL, params=qs).json().get("result")
-	process_match_history(cur, r)
+	process_match_history(cur, r, account_id)
 
 	# keep processing rest of match history while there are more
 	while r.get("results_remaining") > 0:
 		print("Getting more match history...")
 		last_match = r.get("matches")[-1];
-		qs = {"account_id": ACCOUNT_ID, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
+		qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
 		rate_limit()
 		r = requests.get(HISTORY_URL, params=qs).json().get("result")
-		process_match_history(cur, r)
+		process_match_history(cur, r, account_id)
 
 	# cleanup
 	db.commit()
