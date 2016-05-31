@@ -110,7 +110,10 @@ def process_match(cur, match, account_id):
 		# get match details
 		qs = {"key": API_KEY, "match_id": match_id}
 		rate_limit()
-		match_details = requests.get(DETAILS_URL, params=qs).json().get("result")
+		r = requests.get(DETAILS_URL, params=qs)
+		if r.status_code is not 200:
+			raise Exception("Couldn't get match details for %s (%s)" % (match_id, r.status_code))
+		match_details = r.json().get("result")
 
 		# get player + team details
 		all_players = match_details.get("players")
@@ -187,8 +190,11 @@ def main():
 	print("Getting match history...")
 	qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1}
 	rate_limit()
-	r = requests.get(HISTORY_URL, params=qs).json().get("result")
-	process_match_history(cur, r, account_id)
+	r = requests.get(HISTORY_URL, params=qs)
+	if r.status_code is not 200:
+		raise Exception("Couldn't get history (%s)" % r.status_code)
+	history = r.json().get("result")
+	process_match_history(cur, history, account_id)
 
 	# keep processing rest of match history while there are more
 	while r.get("results_remaining") > 0:
@@ -196,8 +202,11 @@ def main():
 		last_match = r.get("matches")[-1];
 		qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
 		rate_limit()
-		r = requests.get(HISTORY_URL, params=qs).json().get("result")
-		process_match_history(cur, r, account_id)
+		r = requests.get(HISTORY_URL, params=qs)
+		if r.status_code is not 200:
+			raise Exception("Couldn't get history (%s)" % r.status_code)
+		history = r.json().get("result")
+		process_match_history(cur, history, account_id)
 
 	# cleanup
 	db.commit()
