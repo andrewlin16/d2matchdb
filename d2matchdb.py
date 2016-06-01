@@ -17,7 +17,8 @@ API_KEY = "79A89606470D44E6BBE64BEC2D73D5BB" # your api key - http://steamcommun
 # other constants - do not touch
 HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
 DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
-API_RATE_LIMIT = 1 # (in seconds)
+API_RATE_LIMIT = 2 # (in seconds)
+API_NUM_RETRIES = 20
 
 SQL_CREATE_TABLE = (
 	"CREATE TABLE matches ("
@@ -83,6 +84,14 @@ def rate_limit():
 		time.sleep(API_RATE_LIMIT - time_diff)
 	last_request = time.time()
 
+def send_request(url, qs):
+	for _ in range(API_NUM_RETRIES):
+		rate_limit()
+		r = requests.get(url, params=qs)
+		if r.status_code is 200:
+			return r
+	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (API_NUM_RETRIES, r.status_code))
+
 # (API attribute to table field)
 PLAYER_ATTRS = {"kills": "kills", "deaths": "deaths", "assists": "assists", "gold": "gold", "last_hits": "last_hits", "denies": "denies", "gold_per_min": "gpm", "xp_per_min": "xpm", "hero_damage": "hero_damage", "tower_damage": "tower_damage", "hero_healing": "hero_healing", "level": "level"}
 
@@ -109,10 +118,7 @@ def process_match(cur, match, account_id):
 	if (cur.fetchone() is None):
 		# get match details
 		qs = {"key": API_KEY, "match_id": match_id}
-		rate_limit()
-		r = requests.get(DETAILS_URL, params=qs)
-		if r.status_code is not 200:
-			raise Exception("Couldn't get match details for %s (%s)" % (match_id, r.status_code))
+		r = send_request(DETAILS_URL, qs)
 		match_details = r.json().get("result")
 
 		# get player + team details
@@ -189,10 +195,7 @@ def main():
 	# process initial list of match history from match sequence
 	print("Getting match history...")
 	qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1}
-	rate_limit()
-	r = requests.get(HISTORY_URL, params=qs)
-	if r.status_code is not 200:
-		raise Exception("Couldn't get history (%s)" % r.status_code)
+	r = send_request(HISTORY_URL, qs)
 	history = r.json().get("result")
 	process_match_history(cur, history, account_id)
 
@@ -201,10 +204,7 @@ def main():
 		print("Getting more match history...")
 		last_match = r.get("matches")[-1];
 		qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
-		rate_limit()
-		r = requests.get(HISTORY_URL, params=qs)
-		if r.status_code is not 200:
-			raise Exception("Couldn't get history (%s)" % r.status_code)
+		r = send_request(HISTORY_URL, params=qs)
 		history = r.json().get("result")
 		process_match_history(cur, history, account_id)
 
