@@ -200,7 +200,7 @@ def main():
 	process_match_history(cur, history, account_id)
 
 	# keep processing rest of match history while there are more
-	while r.get("results_remaining") > 0:
+	while r.json().get("results_remaining") > 0:
 		print("Getting more match history...")
 		last_match = r.get("matches")[-1];
 		qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
