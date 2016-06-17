@@ -1,4 +1,7 @@
 *.db
 *.db.bak
 
+*.swp
+*.swo
+
 api_key.py
