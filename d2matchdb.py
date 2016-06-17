@@ -195,17 +195,15 @@ def main():
 	# process initial list of match history from match sequence
 	print("Getting match history...")
 	qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1}
-	r = send_request(HISTORY_URL, qs)
-	history = r.json().get("result")
+	history = send_request(HISTORY_URL, qs).json().get("result")
 	process_match_history(cur, history, account_id)
 
 	# keep processing rest of match history while there are more
-	while r.json().get("results_remaining") > 0:
+	while history.get("results_remaining") > 0:
 		print("Getting more match history...")
-		last_match = r.get("matches")[-1];
+		last_match = history.get("matches")[-1];
 		qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
-		r = send_request(HISTORY_URL, params=qs)
-		history = r.json().get("result")
+		history = send_request(HISTORY_URL, qs).json().get("result")
 		process_match_history(cur, history, account_id)
 
 	# cleanup
