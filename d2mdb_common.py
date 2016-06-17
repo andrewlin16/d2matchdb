@@ -6,6 +6,7 @@ API_KEY = api_key.API_KEY
 # other constants - do not touch
 HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
 DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
+HEROES_URL = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v1"
 API_RATE_LIMIT = 2 # (in seconds)
 API_NUM_RETRIES = 20
 
@@ -59,6 +60,17 @@ SQL_MATCH_SCHEMA = (
 		"PRIMARY KEY(id)"
 	")"
 )
+
+SQL_HERO_SCHEMA = (
+	"CREATE TABLE heroes ("
+		"id INT UNSIGNED,"
+		"name TEXT,"
+		"internal_name TEXT,"
+		"PRIMARY KEY(id)"
+	")"
+)
+
+HEROES_DB_FILE = 'heroes.db'
 
 # (API attribute to table field)
 PLAYER_ATTRS = {
