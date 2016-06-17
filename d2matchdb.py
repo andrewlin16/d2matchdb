@@ -4,71 +4,13 @@
 
 # imports
 from functools import reduce
+import d2mdb_common as common
 import json
 import os.path
 import requests
 import sqlite3
 import sys
 import time
-
-# settings constants
-API_KEY = "79A89606470D44E6BBE64BEC2D73D5BB" # your api key - http://steamcommunity.com/dev/apikey
-
-# other constants - do not touch
-HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
-DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
-API_RATE_LIMIT = 2 # (in seconds)
-API_NUM_RETRIES = 20
-
-SQL_CREATE_TABLE = (
-	"CREATE TABLE matches ("
-		"id INT UNSIGNED,"
-		"hero INT UNSIGNED,"
-		"kills INT UNSIGNED,"
-		"deaths INT UNSIGNED,"
-		"assists INT UNSIGNED,"
-		"gold INT UNSIGNED,"
-		"last_hits INT UNSIGNED,"
-		"denies INT UNSIGNED,"
-		"gpm INT UNSIGNED,"
-		"xpm INT UNSIGNED,"
-		"hero_damage INT UNSIGNED,"
-		"tower_damage INT UNSIGNED,"
-		"hero_healing INT UNSIGNED,"
-		"level INT UNSIGNED,"
-		"team BOOLEAN,"
-		"our_kills INT UNSIGNED,"
-		"our_deaths INT UNSIGNED,"
-		"our_assists INT UNSIGNED,"
-		"our_gold INT UNSIGNED,"
-		"our_last_hits INT UNSIGNED,"
-		"our_denies INT UNSIGNED,"
-		"our_xpm INT UNSIGNED,"
-		"our_gpm INT UNSIGNED,"
-		"our_hero_damage INT UNSIGNED,"
-		"our_tower_damage INT UNSIGNED,"
-		"our_hero_healing INT UNSIGNED,"
-		"our_level INT UNSIGNED,"
-		"their_kills INT UNSIGNED,"
-		"their_deaths INT UNSIGNED,"
-		"their_assists INT UNSIGNED,"
-		"their_gold INT UNSIGNED,"
-		"their_last_hits INT UNSIGNED,"
-		"their_denies INT UNSIGNED,"
-		"their_xpm INT UNSIGNED,"
-		"their_gpm INT UNSIGNED,"
-		"their_hero_damage INT UNSIGNED,"
-		"their_tower_damage INT UNSIGNED,"
-		"their_hero_healing INT UNSIGNED,"
-		"their_level INT UNSIGNED,"
-		"won BOOLEAN,"
-		"duration INT UNSIGNED,"
-		"start_time TIMESTAMP,"
-		"game_mode INT UNSIGNED,"
-		"ranked BOOLEAN,"
-		"PRIMARY KEY(id)"
-	")"
-)
 
 RANKED_LOBBY_TYPE = 7
 UNRANKED_LOBBY_TYPE = 0
@@ -80,28 +22,25 @@ last_request = time.time()
 def rate_limit():
 	global last_request
 	time_diff = time.time() - last_request
-	if (time_diff < API_RATE_LIMIT):
-		time.sleep(API_RATE_LIMIT - time_diff)
+	if (time_diff < common.API_RATE_LIMIT):
+		time.sleep(common.API_RATE_LIMIT - time_diff)
 	last_request = time.time()
 
 def send_request(url, qs):
-	for _ in range(API_NUM_RETRIES):
+	for _ in range(common.API_NUM_RETRIES):
 		rate_limit()
 		r = requests.get(url, params=qs)
 		if r.status_code is 200:
 			return r
 	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (API_NUM_RETRIES, r.status_code))
 
-# (API attribute to table field)
-PLAYER_ATTRS = {"kills": "kills", "deaths": "deaths", "assists": "assists", "gold": "gold", "last_hits": "last_hits", "denies": "denies", "gold_per_min": "gpm", "xp_per_min": "xpm", "hero_damage": "hero_damage", "tower_damage": "tower_damage", "hero_healing": "hero_healing", "level": "level"}
-
 def fill_in(row_obj, player, prefix):
-	for attr in PLAYER_ATTRS:
-		row_obj[prefix + PLAYER_ATTRS.get(attr)] = player.get(attr)
+	for attr in common.PLAYER_ATTRS:
+		row_obj[prefix + common.PLAYER_ATTRS.get(attr)] = player.get(attr)
 
 def combine_players(a, b):
 	val = dict()
-	for attr in PLAYER_ATTRS:
+	for attr in common.PLAYER_ATTRS:
 		val[attr] = a.get(attr) + b.get(attr)
 	return val;
 
@@ -117,8 +56,8 @@ def process_match(cur, match, account_id):
 	cur.execute("SELECT 1 FROM matches WHERE id = ?", (match_id,))
 	if (cur.fetchone() is None):
 		# get match details
-		qs = {"key": API_KEY, "match_id": match_id}
-		r = send_request(DETAILS_URL, qs)
+		qs = {"key": common.API_KEY, "match_id": match_id}
+		r = send_request(common.DETAILS_URL, qs)
 		match_details = r.json().get("result")
 
 		# get player + team details
@@ -177,7 +116,7 @@ def main():
 	if not os.path.exists(db_file):
 		db = sqlite3.connect(db_file)
 		cur = db.cursor()
-		cur.execute(SQL_CREATE_TABLE)
+		cur.execute(common.SQL_MATCH_SCHEMA)
 		print("New db created as " + db_file)
 	else:
 		db = sqlite3.connect(db_file)
@@ -194,16 +133,16 @@ def main():
 
 	# process initial list of match history from match sequence
 	print("Getting match history...")
-	qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1}
-	history = send_request(HISTORY_URL, qs).json().get("result")
+	qs = {"account_id": account_id, "key": common.API_KEY, "date_min": last_time + 1}
+	history = send_request(common.HISTORY_URL, qs).json().get("result")
 	process_match_history(cur, history, account_id)
 
 	# keep processing rest of match history while there are more
 	while history.get("results_remaining") > 0:
 		print("Getting more match history...")
 		last_match = history.get("matches")[-1];
-		qs = {"account_id": account_id, "key": API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
-		history = send_request(HISTORY_URL, qs).json().get("result")
+		qs = {"account_id": account_id, "key": common.API_KEY, "date_min": last_time + 1, "date_max": last_match.get("start_time") - 1, "start_at_match_id": last_match.get("match_id") - 1}
+		history = send_request(common.HISTORY_URL, qs).json().get("result")
 		process_match_history(cur, history, account_id)
 
 	# cleanup
