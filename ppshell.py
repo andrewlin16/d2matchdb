@@ -1,5 +1,6 @@
 # Dota 2 local DB pretty-print shell
 
+import cmd
 import d2mdb_const as const
 import sqlite3
 import sys
@@ -17,12 +18,58 @@ FIELD_CONV = {
 	"ranked": bool,
 }
 
-def print_match(row):
-	for k in row.keys():
-		label = const.DB_FIELD_NAMES[k] if k in const.DB_FIELD_NAMES else k
-		v = row[k]
-		value = FIELD_CONV[k](v) if k in FIELD_CONV else v
-		print("%s: %s" % (label, value))
+class Ppshell(cmd.Cmd):
+	def __init__(self, cur):
+		super(Ppshell, self).__init__()
+		self.cur = cur
+		self.prompt = '> '
+
+	def print_match(self, row):
+		for k in row.keys():
+			label = const.DB_FIELD_NAMES[k] if k in const.DB_FIELD_NAMES else k
+			v = row[k]
+			value = FIELD_CONV[k](v) if k in FIELD_CONV else v
+			print("%s: %s" % (label, value))
+
+	def do_raw(self, s):
+		'Execute a raw SQL query.'
+		try:
+			rows = self.cur.execute(s)
+			num_results = 0
+			for row in rows:
+				self.print_match(row)
+				print()
+				num_results = num_results + 1
+			print("%s result(s)" % num_results)
+		except sqlite3.OperationalError as sqlerror:
+			print("? - %s" % sqlerror)
+
+	def do_select(self, s):
+		'Execute a SQL SELECT query.'
+		self.do_raw("SELECT %s" % s)
+
+	def do_id(self, s):
+		'Get a single match result for a match ID.'
+		if len(s) == 0:
+			print("No ID specified.")
+			return
+		self.do_select("* FROM matches WHERE id=%s" % s)
+
+	def do_last(self, s):
+		'Get the latest match recorded.'
+		self.do_select("* FROM matches ORDER BY id DESC LIMIT 1")
+
+	def do_exit(self, s):
+		'Exit the shell.'
+		print('Bye')
+		return True
+
+	def do_EOF(self, s):
+		return self.do_exit(s)
+
+	def emptyline(self):
+		pass
+
 
 def main():
 	global heroes
@@ -43,24 +90,8 @@ def main():
 	db.row_factory = sqlite3.Row
 	cur = db.cursor()
 
-	while True:
-		try:
-			sql = input("> ")
-			rows = cur.execute(sql)
-			num_results = 0
-			for row in rows:
-				print_match(row)
-				print()
-				num_results = num_results + 1
-			print("%s result(s)" % num_results)
-		except EOFError:
-			print("Bye")
-			break
-		except KeyboardInterrupt:
-			print()
-			pass
-		except sqlite3.OperationalError as sqlerror:
-			print("? - %s" % sqlerror)
+	shell = Ppshell(cur)
+	shell.cmdloop()
 
 	db.close()
 
