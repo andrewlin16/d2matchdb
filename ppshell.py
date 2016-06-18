@@ -91,7 +91,15 @@ def main():
 	cur = db.cursor()
 
 	shell = Ppshell(cur)
-	shell.cmdloop()
+
+	go = True
+	while go:
+		try:
+			shell.cmdloop()
+			go = False
+		except KeyboardInterrupt:
+			print("^C")
+			pass
 
 	db.close()
 
