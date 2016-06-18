@@ -1,21 +1,21 @@
 # Part of the Dota 2 match scraper/local DB project
 # This creates a table containing the list of heroes.
 
-import d2mdb_common as common
+import d2mdb_const as const
 import json
 import requests
 import sqlite3
 
 def main():
-	db = sqlite3.connect(common.HEROES_DB_FILE)
+	db = sqlite3.connect(const.HEROES_DB_FILE)
 	cur = db.cursor()
-	print("Opened %s" % common.HEROES_DB_FILE)
+	print("Opened %s" % const.HEROES_DB_FILE)
 
 	cur.execute("DROP TABLE IF EXISTS heroes")
-	cur.execute(common.SQL_HERO_SCHEMA)
+	cur.execute(const.SQL_HERO_SCHEMA)
 
-	qs = {"key": common.API_KEY, "language": "en"}
-	r = requests.get(common.HEROES_URL, params=qs)
+	qs = {"key": const.API_KEY, "language": "en"}
+	r = requests.get(const.HEROES_URL, params=qs)
 
 	heroes = r.json().get("result").get("heroes")
 	print("Found %d heroes" % len(heroes))

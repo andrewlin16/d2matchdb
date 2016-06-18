@@ -1,6 +1,6 @@
 # Dota 2 local DB pretty-print shell
 
-import d2mdb_common as common
+import d2mdb_const as const
 import sqlite3
 import sys
 import time
@@ -10,16 +10,16 @@ heroes = dict()
 # a bunch of lambdas to convert from values in the DB to proper representations
 FIELD_CONV = {
 	"hero": (lambda x: "%s (%d)" % (heroes[x], x)),
-	"team": (lambda x: common.TEAMS[x]),
+	"team": (lambda x: const.TEAMS[x]),
 	"won": bool,
 	"start_time": time.ctime,
-	"game_mode": (lambda x: common.GAME_MODES[x] if x in common.GAME_MODES else "? (%s)" % x),
+	"game_mode": (lambda x: const.GAME_MODES[x] if x in const.GAME_MODES else "? (%s)" % x),
 	"ranked": bool,
 }
 
 def print_match(row):
 	for k in row.keys():
-		label = common.DB_FIELD_NAMES[k] if k in common.DB_FIELD_NAMES else k
+		label = const.DB_FIELD_NAMES[k] if k in const.DB_FIELD_NAMES else k
 		v = row[k]
 		value = FIELD_CONV[k](v) if k in FIELD_CONV else v
 		print("%s: %s" % (label, value))
@@ -32,7 +32,7 @@ def main():
 		print("Usage: %s <db file>" % sys.argv[0])
 		return
 
-	hero_db = sqlite3.connect(common.HEROES_DB_FILE)
+	hero_db = sqlite3.connect(const.HEROES_DB_FILE)
 	hero_db_cur = hero_db.cursor()
 	heroes = hero_db_cur.execute("SELECT id, name FROM heroes").fetchall()
 
