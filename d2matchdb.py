@@ -50,7 +50,7 @@ def is_dire(player):
 def process_match(cur, match, account_id):
 	# print out summary of match
 	match_id = match.get("match_id")
-	print("Found match " + str(match_id))
+	print("Found match %d" % match_id)
 
 	# only get match if it does not already exist in db
 	cur.execute("SELECT 1 FROM matches WHERE id = ?", (match_id,))
@@ -84,7 +84,7 @@ def process_match(cur, match, account_id):
 		# store in db
 		sql_query = "INSERT INTO matches ({0}) VALUES ({1})".format(','.join(row_obj.keys()), ','.join('?'*len(row_obj)))
 		cur.execute(sql_query, tuple(row_obj.values()))
-		print("Stored " + str(match_id) + " in db")
+		print("Stored %d in db" % match_id)
 
 def process_match_history(cur, history, account_id):
 	# throw exception is status is not OK
@@ -95,7 +95,7 @@ def process_match_history(cur, history, account_id):
 	results = history.get("num_results")
 	results_total = history.get("total_results")
 	results_left = history.get("results_remaining")
-	print("Got " + str(results) + " matches, " + str(results_left) + " of " + str(results_total) + " remaining")
+	print("Got %d matches, %d of %d remaining" % (results, results_left, results_total))
 
 	# process each match in history
 	matches = history.get("matches")
@@ -105,7 +105,7 @@ def process_match_history(cur, history, account_id):
 def main():
 	# check command line arguments
 	if len(sys.argv) < 2:
-		print("Usage: " + sys.argv[0] + " <account id>")
+		print("Usage: %s <account id>" % sys.argv[0])
 		print("You can get account id from Dota 2.")
 		return
 
@@ -117,11 +117,11 @@ def main():
 		db = sqlite3.connect(db_file)
 		cur = db.cursor()
 		cur.execute(const.SQL_MATCH_SCHEMA)
-		print("New db created as " + db_file)
+		print("New db created as %s" % db_file)
 	else:
 		db = sqlite3.connect(db_file)
 		cur = db.cursor()
-		print("Opened " + db_file)
+		print("Opened %s" % db_file)
 
 	# get latest match time
 	last_time = cur.execute("SELECT start_time FROM matches ORDER BY start_time DESC LIMIT 1").fetchone()
@@ -129,7 +129,7 @@ def main():
 		last_time = 0
 	else:
 		last_time = last_time[0]
-	print("Last match time was " + str(last_time))
+	print("Last match time was %d" % last_time)
 
 	# process initial list of match history from match sequence
 	print("Getting match history...")
