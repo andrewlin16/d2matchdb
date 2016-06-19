@@ -2,6 +2,7 @@
 
 import cmd
 import d2mdb_const as const
+import datetime
 import sqlite3
 import sys
 import time
@@ -58,6 +59,17 @@ class Ppshell(cmd.Cmd):
 	def do_last(self, s):
 		'Get the latest match recorded.'
 		self.do_select("* FROM matches ORDER BY id DESC LIMIT 1")
+
+	def do_at(self, s):
+		'Get the match closest to the given time (in format YYYY-MM-DD hh-mm-ss)'
+		try:
+			time = datetime.datetime.strptime(s, "%Y-%m-%d %H-%M-%S").timestamp()
+			rows = self.cur.execute("SELECT id FROM matches ORDER BY ABS(start_time - ?) ASC LIMIT 1", (time,))
+			match_id = str(rows.fetchone()['id'])
+			self.do_id(match_id)
+		except ValueError as error:
+			print("? - %s" % error)
+			print("(Date needs to be in 'YYYY-MM-DD hh-mm-ss' format.)")
 
 	def do_exit(self, s):
 		'Exit the shell.'
