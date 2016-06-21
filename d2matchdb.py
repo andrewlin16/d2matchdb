@@ -32,7 +32,7 @@ def send_request(url, qs):
 		r = requests.get(url, params=qs)
 		if r.status_code is 200:
 			return r
-	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (API_NUM_RETRIES, r.status_code))
+	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (const.API_NUM_RETRIES, r.status_code))
 
 def fill_in(row_obj, player, prefix):
 	for attr in const.PLAYER_ATTRS:
