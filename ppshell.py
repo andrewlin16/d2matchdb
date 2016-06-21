@@ -14,6 +14,7 @@ FIELD_CONV = {
 	"hero": (lambda x: "%s (%d)" % (heroes[x], x)),
 	"team": (lambda x: const.TEAMS[x]),
 	"won": bool,
+	"duration": (lambda x: datetime.timedelta(seconds=int(x))),
 	"start_time": time.ctime,
 	"game_mode": (lambda x: const.GAME_MODES[x] if x in const.GAME_MODES else "? (%s)" % x),
 	"ranked": bool,
