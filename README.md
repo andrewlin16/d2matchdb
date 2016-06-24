@@ -1,8 +1,9 @@
 d2matchdb
 =========
 
-d2matchdb is a small Python 3 project consisting of a few scripts to fetch,
-store, and query information about Dota 2 matches.
+d2matchdb is a small Python 3 project consisting of a few tools/scripts to
+fetch, store, and query information about Dota 2 matches into/from a SQLite
+database.
 
 Usage
 -----
@@ -14,8 +15,8 @@ can [register for an API key here](http://steamcommunity.com/dev/apikey).
 here>"`.
 4. Run `python d2matchdb.py <your friend ID>` to fetch and store your match
 history and match data. Your friend ID can be found by going into your profile
-page in Dota 2 and looking under the "Edit Profile" button near the top-right of
-the screen. This script writes the database to a .db file named after your
+page in Dota 2 and looking under the "Edit Profile" button near the top-right
+of the screen. This script writes the database to a .db file named after your
 friend ID. For example, if your friend ID is 123456, then you would run `python
 d2matchdb.py 123456`, which would fetch and store the results into a file named
 `123456.db`.
@@ -30,8 +31,8 @@ a more human-readable format, then:
 1. Run `python updateheroes.py`. This will create heroes.db, a file which
 contains a table of hero IDs and names. This is used by the shell to print hero
 information.
-2. Run `python ppshell.py <your friend ID>.db`. This will bring you to a command
-interpreter/shell with a few basic commands.
+2. Run `python ppshell.py <your friend ID>.db`. This will bring you to a
+command interpreter/shell with a few basic commands.
 3. You can type `help` to get some basic information on the supported commands.
 4. Once you're done, you can type `exit` or send a ^D to exit the shell.
 
@@ -41,7 +42,7 @@ Some example commands:
 * `id <match id>`: Show match information for the given match id (from the
 database).
 * `at <time>`: Show the match that started closest to the given time (time must
-be in format "YYYY-MM-DD hh-mm-ss"
+be in format "YYYY-MM-DD hh-mm-ss").
 * `select * from matches order by id desc limit 5`: Show the last 5 matches.
 
 Misc
@@ -49,12 +50,13 @@ Misc
 
 This was initially a small mini-project of mine to familiarize myself with some
 Python. I also thought it would be nice to have a local database of my matches
-to run a bunch of queries on and derive some random data/statistics on my games.
+to run a bunch of queries on and derive some random data/statistics on my
+games.
 
 The main libraries used in this project are the [Requests
 library](http://docs.python-requests.org/en/master/) and the [SQLite
-module](https://docs.python.org/3/library/sqlite3.html) from the Python Standard
-Library.
+module](https://docs.python.org/3/library/sqlite3.html) from the Python
+Standard Library.
 
 License/Legal
 -------------
