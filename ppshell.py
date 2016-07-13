@@ -72,6 +72,26 @@ class Ppshell(cmd.Cmd):
 			print("? - %s" % error)
 			print("(Date needs to be in 'YYYY-MM-DD hh-mm-ss' format.)")
 
+	def do_heroes(self, s):
+		'Get the ID to hero mapping.'
+		rev_map = sorted([(b, a) for (a, b) in heroes.items()], key=lambda el: el[0])
+		for hero, hero_id in rev_map:
+			print("%s: %d" % (hero, hero_id))
+
+	def do_hero(self, s):
+		'Search for a hero (ID or substring).'
+		if s.isdigit():
+			try:
+				print(heroes[int(s)])
+			except KeyError:
+				print("No hero with ID %s." % s)
+		else:
+			for hero_id, hero in heroes.items():
+				if hero.lower().find(s.lower()) != -1:
+					print("%d (%s)" % (hero_id, hero))
+					return
+			print("Couldn't find hero with name \"%s\"." % s)
+
 	def do_exit(self, s):
 		'Exit the shell.'
 		print('Bye')
