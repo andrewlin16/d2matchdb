@@ -44,6 +44,9 @@ database).
 * `at <time>`: Show the match that started closest to the given time (time must
 be in format "YYYY-MM-DD hh-mm-ss").
 * `select * from matches order by id desc limit 5`: Show the last 5 matches.
+* `heroes`: Get the list of heroes and their corresponding IDs.
+* `hero <id>`: Find the hero with the corresponding ID.
+* `hero <string>`: Search for a hero by substring.
 
 Misc
 ----
