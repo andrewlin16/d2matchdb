@@ -92,6 +92,10 @@ class Ppshell(cmd.Cmd):
 					return
 			print("Couldn't find hero with name \"%s\"." % s)
 
+	def do_schema(self, s):
+		'Print out the schema (as expected by the program).'
+		print(const.SQL_MATCH_SCHEMA)
+
 	def do_exit(self, s):
 		'Exit the shell.'
 		print('Bye')
