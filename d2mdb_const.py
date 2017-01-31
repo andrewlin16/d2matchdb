@@ -157,6 +157,7 @@ GAME_MODES = {
 	14: "Compendium Matchmaking",
 	16: "Captains Draft",
 	18: "Ability Draft",
+	19: "Dark Moon",
 	20: "All Random Deathmatch",
 	22: "International Ranked",
 }

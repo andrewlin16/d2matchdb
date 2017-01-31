@@ -36,7 +36,7 @@ def send_request(url, qs):
 
 def fill_in(row_obj, player, prefix):
 	for attr in const.PLAYER_ATTRS:
-		row_obj[prefix + const.PLAYER_ATTRS.get(attr)] = player.get(attr)
+		row_obj[prefix + const.PLAYER_ATTRS.get(attr)] = player.get(attr, 0)
 
 def combine_players(a, b):
 	val = dict()
@@ -65,7 +65,7 @@ def process_match(cur, match, account_id):
 		player = next(filter(lambda o: o.get("account_id") == account_id, all_players))
 		player_team = is_dire(player)
 		our_team = reduce(combine_players, filter(lambda p: is_dire(p) == player_team, all_players))
-		their_team = reduce(combine_players, filter(lambda p: is_dire(p) != player_team, all_players))
+		their_team = reduce(combine_players, filter(lambda p: is_dire(p) != player_team, all_players), {})
 
 		# fill in row object with fields
 		row_obj = dict()
