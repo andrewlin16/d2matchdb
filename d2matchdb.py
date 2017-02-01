@@ -7,6 +7,7 @@ from functools import reduce
 import d2mdb_const as const
 import json
 import os.path
+import random
 import requests
 import sqlite3
 import sys
@@ -32,6 +33,7 @@ def send_request(url, qs):
 		r = requests.get(url, params=qs)
 		if r.status_code is 200:
 			return r
+		last_request = last_request + random.random()
 	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (const.API_NUM_RETRIES, r.status_code))
 
 def fill_in(row_obj, player, prefix):
