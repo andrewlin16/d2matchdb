@@ -44,7 +44,7 @@ def combine_players(a, b):
 	val = dict()
 	for attr in const.PLAYER_ATTRS:
 		val[attr] = a.get(attr) + b.get(attr)
-	return val;
+	return val
 
 def is_dire(player):
 	return player.get("player_slot") & 128 != 0
@@ -67,7 +67,7 @@ def process_match(cur, match, account_id):
 		player = next(filter(lambda o: o.get("account_id") == account_id, all_players))
 		player_team = is_dire(player)
 		our_team = reduce(combine_players, filter(lambda p: is_dire(p) == player_team, all_players))
-		their_team = reduce(combine_players, filter(lambda p: is_dire(p) != player_team, all_players), {})
+		their_team = reduce(combine_players, filter(lambda p: is_dire(p) != player_team, all_players), {attr: 0 for attr in const.PLAYER_ATTRS})
 
 		# fill in row object with fields
 		row_obj = dict()
