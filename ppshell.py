@@ -18,6 +18,9 @@ FIELD_CONV = {
 	"start_time": time.ctime,
 	"game_mode": (lambda x: const.GAME_MODES[x] if x in const.GAME_MODES else "? (%s)" % x),
 	"ranked": bool,
+	"lobby_type": (lambda x: const.LOBBY_TYPES[x] if x in const.LOBBY_TYPES else "? (%s)" % x),
+	"first_blood_time": (lambda x: datetime.timedelta(seconds=int(x))),
+	"leaver_status": bool,
 }
 
 class Ppshell(cmd.Cmd):
@@ -126,6 +129,19 @@ def main():
 	db = sqlite3.connect(db_file)
 	db.row_factory = sqlite3.Row
 	cur = db.cursor()
+
+	# check schema version
+	schema_version = 0
+	try:
+		cur.execute("SELECT * FROM version")
+		schema_row = cur.fetchone() or (0,)
+		schema_version = schema_row[0]
+	except sqlite3.OperationalError:
+		# no version table found, assuming v0
+		pass
+
+	if schema_version != const.DB_SCHEMA_VERSION:
+		print("NOTE: Schema version mismatch found (expected %d, got %d)!" % (const.DB_SCHEMA_VERSION, schema_version))
 
 	shell = Ppshell(cur)
 

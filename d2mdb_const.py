@@ -57,9 +57,20 @@ SQL_MATCH_SCHEMA = (
 		"start_time TIMESTAMP,"
 		"game_mode INT UNSIGNED,"
 		"ranked BOOLEAN,"
+		"lobby_type INT UNSIGNED,"
+		"first_blood_time INT UNSIGNED,"
+		"leaver_status BOOLEAN,"
 		"PRIMARY KEY(id)"
 	")"
 )
+
+SQL_VERSION_SCHEMA = (
+	"CREATE TABLE version ("
+		"version INT UNSIGNED"
+	")"
+)
+
+DB_SCHEMA_VERSION = 2
 
 SQL_HERO_SCHEMA = (
 	"CREATE TABLE heroes ("
@@ -134,6 +145,9 @@ DB_FIELD_NAMES = {
 	"start_time": "Start Time",
 	"game_mode": "Game Mode",
 	"ranked": "Ranked?",
+	"lobby_type": "Lobby Type",
+	"first_blood_time": "Time to First Blood",
+	"leaver_status": "Has Abandon?"
 }
 
 TEAMS = ["Radiant", "Dire"]
@@ -160,4 +174,18 @@ GAME_MODES = {
 	19: "Dark Moon",
 	20: "All Random Deathmatch",
 	22: "International Ranked",
+}
+
+# based from https://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails
+LOBBY_TYPES = {
+	-1: "N/A",
+	0: "Normal",
+	1: "Practice",
+	2: "Tournament",
+	3: "Tutorial",
+	4: "Bot",
+	5: "Team Queue",
+	6: "Solo Queue",
+	7: "Ranked",
+	8: "1v1 Mid",
 }

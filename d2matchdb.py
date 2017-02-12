@@ -18,7 +18,43 @@ UNRANKED_LOBBY_TYPE = 0
 
 last_request = time.time()
 
-# functions
+# schema upgrade functions
+
+def schema_upgrade_to_v2(cur):
+	print("Upgrading DB to v2...")
+
+	# add new columns
+	for column in ["lobby_type INT UNSIGNED", "first_blood_time INT UNSIGNED", "leaver_status BOOLEAN"]:
+		cur.execute("ALTER TABLE matches ADD %s" % column)
+
+	# update matches
+	cur.execute("SELECT id FROM matches")
+	rows = cur.fetchall()
+	for row in rows:
+		# get match id and details
+		match_id = row[0]
+		if match_id < 674983563:
+			continue
+		match_details = get_match(match_id)
+
+		# fill in row object with new fields
+		row_obj = dict()
+		row_obj["lobby_type"] = match_details.get("lobby_type")
+		row_obj["first_blood_time"] = match_details.get("first_blood_time")
+		row_obj["leaver_status"] = bool(reduce(lambda a, b: a or b.get("leaver_status", 0) > 1, match_details.get("players"), False))
+
+		# update match with new fields
+		sql_query = "UPDATE matches SET ({0}) = ({1}) WHERE id = ?".format(','.join(row_obj.keys()), ','.join('?'*len(row_obj)))
+		cur.execute(sql_query, tuple(row_obj.values()) + (match_id,))
+		print("Updated %d in db" % match_id)
+
+	return 2
+
+SCHEMA_UPGRADE_TABLE = {
+	0: schema_upgrade_to_v2,
+}
+
+# network helper functions
 
 def rate_limit():
 	global last_request
@@ -35,6 +71,13 @@ def send_request(url, qs):
 			return r
 		last_request = last_request + random.random()
 	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (const.API_NUM_RETRIES, r.status_code))
+
+def get_match(match_id):
+	qs = {"key": const.API_KEY, "match_id": match_id}
+	r = send_request(const.DETAILS_URL, qs)
+	return r.json().get("result")
+
+# data processing functions
 
 def fill_in(row_obj, player, prefix):
 	for attr in const.PLAYER_ATTRS:
@@ -58,9 +101,7 @@ def process_match(cur, match, account_id):
 	cur.execute("SELECT 1 FROM matches WHERE id = ?", (match_id,))
 	if (cur.fetchone() is None):
 		# get match details
-		qs = {"key": const.API_KEY, "match_id": match_id}
-		r = send_request(const.DETAILS_URL, qs)
-		match_details = r.json().get("result")
+		match_details = get_match(match_id)
 
 		# get player + team details
 		all_players = match_details.get("players")
@@ -82,6 +123,9 @@ def process_match(cur, match, account_id):
 		row_obj["start_time"] = match_details.get("start_time")
 		row_obj["game_mode"] = match_details.get("game_mode")
 		row_obj["ranked"] = match_details.get("lobby_type") == RANKED_LOBBY_TYPE
+		row_obj["lobby_type"] = match_details.get("lobby_type")
+		row_obj["first_blood_time"] = match_details.get("first_blood_time")
+		row_obj["leaver_status"] = bool(reduce(lambda a, b: a | b.get("leaver_status", 0) > 1, all_players, 0))
 
 		# store in db
 		sql_query = "INSERT INTO matches ({0}) VALUES ({1})".format(','.join(row_obj.keys()), ','.join('?'*len(row_obj)))
@@ -104,6 +148,8 @@ def process_match_history(cur, history, account_id):
 	for match in matches:
 		process_match(cur, match, account_id)
 
+# the main function
+
 def main():
 	# check command line arguments
 	if len(sys.argv) < 2:
@@ -119,11 +165,29 @@ def main():
 		db = sqlite3.connect(db_file)
 		cur = db.cursor()
 		cur.execute(const.SQL_MATCH_SCHEMA)
+		cur.execute(const.SQL_VERSION_SCHEMA)
+		cur.execute("INSERT INTO version VALUES (?)", (const.DB_SCHEMA_VERSION,))
 		print("New db created as %s" % db_file)
 	else:
 		db = sqlite3.connect(db_file)
 		cur = db.cursor()
 		print("Opened %s" % db_file)
+
+	# check for schema upgrades
+	try:
+		cur.execute("SELECT * FROM version")
+		schema_row = cur.fetchone() or (0,)
+		schema_version = schema_row[0]
+	except sqlite3.OperationalError:
+		# no version table found, assuming v0
+		cur.execute(const.SQL_VERSION_SCHEMA)
+		schema_version = 0
+
+	print("DB schema v%d" % schema_version)
+	while schema_version in SCHEMA_UPGRADE_TABLE:
+		schema_version = SCHEMA_UPGRADE_TABLE[schema_version](cur)
+		cur.execute("DELETE FROM version")
+		cur.execute("INSERT INTO version VALUES (?)", (schema_version,))
 
 	# get latest match time
 	last_time = cur.execute("SELECT start_time FROM matches ORDER BY start_time DESC LIMIT 1").fetchone()
