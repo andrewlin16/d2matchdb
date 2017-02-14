@@ -3,22 +3,29 @@
 import cmd
 import d2mdb_const as const
 import datetime
+import functools
 import sqlite3
 import sys
 import time
 
 heroes = dict()
 
+hero_db = sqlite3.connect(const.HEROES_DB_FILE)
+hero_db_cur = hero_db.cursor()
+heroes = dict(hero_db_cur.execute("SELECT id, name FROM heroes").fetchall())
+
+show_enum = lambda e, x: "%s (%d)" % (e[x] if x in e else "?", x)
+
 # a bunch of lambdas to convert from values in the DB to proper representations
 FIELD_CONV = {
-	"hero": (lambda x: "%s (%d)" % (heroes[x], x)),
+	"hero": functools.partial(show_enum, heroes),
 	"team": (lambda x: const.TEAMS[x]),
 	"won": bool,
 	"duration": (lambda x: datetime.timedelta(seconds=int(x))),
 	"start_time": time.ctime,
-	"game_mode": (lambda x: const.GAME_MODES[x] if x in const.GAME_MODES else "? (%s)" % x),
+	"game_mode": functools.partial(show_enum, const.GAME_MODES),
 	"ranked": bool,
-	"lobby_type": (lambda x: const.LOBBY_TYPES[x] if x in const.LOBBY_TYPES else "? (%s)" % x),
+	"lobby_type": functools.partial(show_enum, const.LOBBY_TYPES),
 	"first_blood_time": (lambda x: datetime.timedelta(seconds=int(x))),
 	"leaver_status": bool,
 }
@@ -112,18 +119,10 @@ class Ppshell(cmd.Cmd):
 
 
 def main():
-	global heroes
-
 	# check command line arguments
 	if len(sys.argv) < 2:
 		print("Usage: %s <db file>" % sys.argv[0])
 		return
-
-	hero_db = sqlite3.connect(const.HEROES_DB_FILE)
-	hero_db_cur = hero_db.cursor()
-	heroes = hero_db_cur.execute("SELECT id, name FROM heroes").fetchall()
-
-	heroes = dict(heroes)
 
 	db_file = sys.argv[1]
 	db = sqlite3.connect(db_file)
