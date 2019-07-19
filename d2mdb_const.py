@@ -155,7 +155,7 @@ TEAMS = ["Radiant", "Dire"]
 # based from https://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails
 GAME_MODES = {
 	0: "N/A",
-	1: "All Pick",
+	1: "All Pick (Legacy)",
 	2: "Captains Mode",
 	3: "Random Draft",
 	4: "Single Draft",
@@ -171,9 +171,11 @@ GAME_MODES = {
 	14: "Compendium Matchmaking",
 	16: "Captains Draft",
 	18: "Ability Draft",
-	19: "Dark Moon",
+	19: "Event",
 	20: "All Random Deathmatch",
-	22: "International Ranked",
+	22: "All Pick",
+	23: "Turbo",
+	24: "Mutation",
 }
 
 # based from https://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails
