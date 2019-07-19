@@ -4,6 +4,7 @@ import cmd
 import d2mdb_const as const
 import datetime
 import functools
+import shlex
 import sqlite3
 import sys
 import time
@@ -14,19 +15,19 @@ hero_db = sqlite3.connect(const.HEROES_DB_FILE)
 hero_db_cur = hero_db.cursor()
 heroes = dict(hero_db_cur.execute("SELECT id, name FROM heroes").fetchall())
 
-show_enum = lambda e, x: "%s (%d)" % (e[x] if x in e else "?", x)
+show_enum = lambda e, x: "%s (%s)" % (e[x] if x in e else "?", str(x))
 
 # a bunch of lambdas to convert from values in the DB to proper representations
 FIELD_CONV = {
 	"hero": functools.partial(show_enum, heroes),
 	"team": (lambda x: const.TEAMS[x]),
 	"won": bool,
-	"duration": (lambda x: datetime.timedelta(seconds=int(x))),
+	"duration": (lambda x: datetime.timedelta(seconds=int(x or 0))),
 	"start_time": time.ctime,
 	"game_mode": functools.partial(show_enum, const.GAME_MODES),
 	"ranked": bool,
 	"lobby_type": functools.partial(show_enum, const.LOBBY_TYPES),
-	"first_blood_time": (lambda x: datetime.timedelta(seconds=int(x))),
+	"first_blood_time": (lambda x: datetime.timedelta(seconds=int(x or 0))),
 	"leaver_status": bool,
 }
 
@@ -59,6 +60,18 @@ class Ppshell(cmd.Cmd):
 	def do_select(self, s):
 		'Execute a SQL SELECT query.'
 		self.do_raw("SELECT %s" % s)
+
+	def do_query(self, s):
+		'Build and execute a SQL SELECT query. Usage: fields, predicate, asc/desc, limit.'
+		args = shlex.split(s)
+		fields = args[0] if len(args) >= 1 else "*"
+		where = "WHERE %s " % args[1] if len(args) >= 2 else ""
+		desc = 'ASC' if len(args) >= 3 and (args[2].lower() == 'asc' or args[2].lower() == 'false' or args[2] == '0') else 'DESC'
+		limit = ("" if args[3].lower() == 'all' else " LIMIT %s" % args[3]) if len(args) >= 4 else " LIMIT 10"
+
+		query = "SELECT %s FROM matches %sORDER BY id %s%s" % (fields, where, desc, limit)
+		print(query)
+		self.do_raw(query)
 
 	def do_id(self, s):
 		'Get a single match result for a match ID.'
