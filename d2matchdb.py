@@ -33,8 +33,6 @@ def schema_upgrade_to_v2(cur):
 	for row in rows:
 		# get match id and details
 		match_id = row[0]
-		if match_id < 674983563:
-			continue
 		match_details = get_match(match_id)
 
 		# fill in row object with new fields
