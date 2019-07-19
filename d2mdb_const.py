@@ -190,4 +190,6 @@ LOBBY_TYPES = {
 	6: "Solo Queue",
 	7: "Ranked",
 	8: "1v1 Mid",
+	9: "Battle Cup",
+	12: "Mo'rokai",
 }
