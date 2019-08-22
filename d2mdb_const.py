@@ -60,6 +60,8 @@ SQL_MATCH_SCHEMA = (
 		"lobby_type INT UNSIGNED,"
 		"first_blood_time INT UNSIGNED,"
 		"leaver_status BOOLEAN,"
+		"have_mega_creeps BOOLEAN,"
+		"against_mega_creeps BOOLEAN,"
 		"PRIMARY KEY(id)"
 	")"
 )
@@ -70,7 +72,7 @@ SQL_VERSION_SCHEMA = (
 	")"
 )
 
-DB_SCHEMA_VERSION = 2
+DB_SCHEMA_VERSION = 3
 
 SQL_HERO_SCHEMA = (
 	"CREATE TABLE heroes ("
@@ -147,7 +149,9 @@ DB_FIELD_NAMES = {
 	"ranked": "Ranked?",
 	"lobby_type": "Lobby Type",
 	"first_blood_time": "Time to First Blood",
-	"leaver_status": "Has Abandon?"
+	"leaver_status": "Has Abandon?",
+	"have_mega_creeps": "Have Mega Creeps?",
+	"against_mega_creeps": "Against Mega Creeps?",
 }
 
 TEAMS = ["Radiant", "Dire"]

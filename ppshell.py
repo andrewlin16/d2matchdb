@@ -29,6 +29,8 @@ FIELD_CONV = {
 	"lobby_type": functools.partial(show_enum, const.LOBBY_TYPES),
 	"first_blood_time": (lambda x: datetime.timedelta(seconds=int(x or 0))),
 	"leaver_status": bool,
+	"have_mega_creeps": bool,
+	"against_mega_creeps": bool,
 }
 
 class Ppshell(cmd.Cmd):

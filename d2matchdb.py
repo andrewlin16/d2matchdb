@@ -48,8 +48,40 @@ def schema_upgrade_to_v2(cur):
 
 	return 2
 
+def schema_upgrade_to_v3(cur):
+	print("Upgrading DB to v3...")
+
+	# add new column
+	for column in ["have_mega_creeps BOOLEAN", "against_mega_creeps BOOLEAN"]:
+		cur.execute("ALTER TABLE matches ADD %s" % column)
+
+	# update matches
+	cur.execute("SELECT id, team FROM matches")
+	rows = cur.fetchall()
+	for row in rows:
+		# get match id and details
+		match_id = row[0]
+		match_details = get_match(match_id)
+
+		# fill in row object with new mega creeps fields
+		team = row[1]
+		have_mega_creeps_field = "barracks_status_radiant" if team else "barracks_status_dire"
+		against_mega_creeps_field = "barracks_status_dire" if team else "barracks_status_radiant"
+
+		row_obj = dict()
+		row_obj["have_mega_creeps"] = match_details[have_mega_creeps_field] == 0
+		row_obj["against_mega_creeps"] = match_details[against_mega_creeps_field] == 0
+
+		# update match with new fields
+		sql_query = "UPDATE matches SET ({0}) = ({1}) WHERE id = ?".format(','.join(row_obj.keys()), ','.join('?'*len(row_obj)))
+		cur.execute(sql_query, tuple(row_obj.values()) + (match_id,))
+		print("Updated %d in db" % match_id)
+
+	return 3
+
 SCHEMA_UPGRADE_TABLE = {
 	0: schema_upgrade_to_v2,
+	2: schema_upgrade_to_v3,
 }
 
 # network helper functions
@@ -124,6 +156,8 @@ def process_match(cur, match, account_id):
 		row_obj["lobby_type"] = match_details.get("lobby_type")
 		row_obj["first_blood_time"] = match_details.get("first_blood_time")
 		row_obj["leaver_status"] = bool(reduce(lambda a, b: a | b.get("leaver_status", 0) > 1, all_players, 0))
+		row_obj["have_mega_creeps"] = match_details.get("barracks_status_radiant" if player_team else "barracks_status_dire") == 0
+		row_obj["against_mega_creeps"] = match_details.get("barracks_status_dire" if player_team else "barracks_status_radiant") == 0
 
 		# store in db
 		sql_query = "INSERT INTO matches ({0}) VALUES ({1})".format(','.join(row_obj.keys()), ','.join('?'*len(row_obj)))
