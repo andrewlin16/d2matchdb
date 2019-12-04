@@ -97,7 +97,7 @@ def send_request(url, qs):
 	for _ in range(const.API_NUM_RETRIES):
 		rate_limit()
 		r = requests.get(url, params=qs)
-		if r.status_code is 200:
+		if r.status_code == 200:
 			return r
 		last_request = last_request + random.random()
 	raise Exception("Failed to get request after %d tries (last attempt was %s)" % (const.API_NUM_RETRIES, r.status_code))
@@ -166,7 +166,7 @@ def process_match(cur, match, account_id):
 
 def process_match_history(cur, history, account_id):
 	# throw exception is status is not OK
-	if history.get("status") is not 1:
+	if history.get("status") != 1:
 		raise Exception(history.get("statusDetail"))
 
 	# print out summary of match history status
