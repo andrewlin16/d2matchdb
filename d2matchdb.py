@@ -187,7 +187,7 @@ def main():
 	if len(sys.argv) < 2:
 		print("Usage: %s <account id>" % sys.argv[0])
 		print("You can get account id from Dota 2.")
-		return
+		sys.exit(1)
 
 	account_id = int(sys.argv[1])
 	db_file = str(account_id) + ".db"
