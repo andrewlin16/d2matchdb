@@ -12,6 +12,7 @@ import requests
 import sqlite3
 import sys
 import time
+import traceback
 
 RANKED_LOBBY_TYPE = 7
 UNRANKED_LOBBY_TYPE = 0
@@ -94,6 +95,7 @@ def rate_limit():
 	last_request = time.time()
 
 def send_request(url, qs):
+	global last_request
 	for _ in range(const.API_NUM_RETRIES):
 		rate_limit()
 		r = requests.get(url, params=qs)
@@ -122,10 +124,9 @@ def combine_players(a, b):
 def is_dire(player):
 	return player.get("player_slot") & 128 != 0
 
-def process_match(cur, match, account_id):
+def process_match(cur, match_id, account_id):
 	# print out summary of match
-	match_id = match.get("match_id")
-	print("Found match %d" % match_id)
+	print("Processing match %d..." % match_id)
 
 	# only get match if it does not already exist in db
 	cur.execute("SELECT 1 FROM matches WHERE id = ?", (match_id,))
@@ -178,7 +179,12 @@ def process_match_history(cur, history, account_id):
 	# process each match in history
 	matches = history.get("matches")
 	for match in matches:
-		process_match(cur, match, account_id)
+		match_id = match.get("match_id")
+		try:
+			process_match(cur, match_id, account_id)
+		except Exception as e:
+			print("Something went wrong processing {}, skipping...".format(match_id))
+			traceback.print_exc()
 
 # the main function
 
