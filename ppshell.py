@@ -4,6 +4,7 @@ import cmd
 import d2mdb_const as const
 import datetime
 import functools
+import random
 import shlex
 import sqlite3
 import sys
@@ -116,6 +117,10 @@ class Ppshell(cmd.Cmd):
 					print("%d (%s)" % (hero_id, hero))
 					return
 			print("Couldn't find hero with name \"%s\"." % s)
+
+	def do_rollhero(self, s):
+		'Roll/pick a random hero.'
+		print(random.choice(list(heroes.values())))
 
 	def do_schema(self, s):
 		'Print out the schema (as expected by the program).'
