@@ -118,7 +118,7 @@ def fill_in(row_obj, player, prefix):
 def combine_players(a, b):
 	val = dict()
 	for attr in const.PLAYER_ATTRS:
-		val[attr] = a.get(attr) + b.get(attr)
+		val[attr] = a.get(attr, 0) + b.get(attr, 0)
 	return val
 
 def is_dire(player):
