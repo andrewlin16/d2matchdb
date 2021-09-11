@@ -149,7 +149,7 @@ def process_match(cur, match_id, account_id):
 		row_obj["team"] = player_team
 		fill_in(row_obj, our_team, "our_")
 		fill_in(row_obj, their_team, "their_")
-		row_obj["won"] = match_details.get("radiant_win") ^ is_dire(player)
+		row_obj["won"] = match_details.get("radiant_win", False) ^ is_dire(player)
 		row_obj["duration"] = match_details.get("duration")
 		row_obj["start_time"] = match_details.get("start_time")
 		row_obj["game_mode"] = match_details.get("game_mode")
